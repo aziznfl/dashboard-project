@@ -1,10 +1,8 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
-	"github.com/durianpay/fullstack-boilerplate/internal/entity"
 	"github.com/durianpay/fullstack-boilerplate/internal/module/payment/repository"
 	paymentUsecase "github.com/durianpay/fullstack-boilerplate/internal/module/payment/usecase"
 	"github.com/durianpay/fullstack-boilerplate/internal/openapigen"
@@ -45,9 +43,5 @@ func (h *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	err = json.NewEncoder(w).Encode(openapigen.PaymentListResponse{Payments: &respPayments})
-	if err != nil {
-		transport.WriteAppError(w, entity.ErrorInternal("internal server error"))
-		return
-	}
+	transport.WriteJSON(w, http.StatusOK, openapigen.PaymentListResponse{Payments: &respPayments})
 }
