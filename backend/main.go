@@ -12,15 +12,14 @@ import (
 	au "github.com/durianpay/fullstack-boilerplate/internal/module/auth/usecase"
 	srv "github.com/durianpay/fullstack-boilerplate/internal/service/http"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
-	_ = godotenv.Load()
+	cfg := config.Load()
 
-	db, err := sql.Open("sqlite3", "dashboard.db?_foreign_keys=1")
+	db, err := sql.Open("sqlite3", cfg.DbSource+"?_foreign_keys=1")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,14 +29,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	JwtExpiredDuration, err := time.ParseDuration(config.JwtExpired)
+	JwtExpiredDuration, err := time.ParseDuration(cfg.JwtExpired)
 	if err != nil {
 		panic(err)
 	}
 
 	userRepo := ar.NewUserRepo(db)
 
-	authUC := au.NewAuthUsecase(userRepo, config.JwtSecret, JwtExpiredDuration)
+	authUC := au.NewAuthUsecase(userRepo, cfg.JwtSecret, JwtExpiredDuration)
 
 	authH := ah.NewAuthHandler(authUC)
 
@@ -45,9 +44,9 @@ func main() {
 		Auth: authH,
 	}
 
-	server := srv.NewServer(apiHandler, config.OpenapiYamlLocation)
+	server := srv.NewServer(apiHandler, cfg.OpenapiYamlLocation, cfg.AppEnv)
 
-	addr := config.HttpAddress
+	addr := cfg.HttpAddress
 	log.Printf("starting server on %s", addr)
 	server.Start(addr)
 }

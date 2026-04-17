@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/durianpay/fullstack-boilerplate/internal/config"
 	"github.com/durianpay/fullstack-boilerplate/internal/middleware"
 	"github.com/durianpay/fullstack-boilerplate/internal/openapigen"
 	"github.com/go-chi/chi/v5"
@@ -26,7 +25,7 @@ const (
 	idleTimeout  = 60
 )
 
-func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string) *Server {
+func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string, appEnv string) *Server {
 	swagger, err := openapigen.GetSwagger()
 	if err != nil {
 		log.Fatalf("failed to load swagger: %v", err)
@@ -34,7 +33,7 @@ func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string) *S
 
 	r := chi.NewRouter()
 
-	if config.AppEnv == "development" {
+	if appEnv == "development" {
 		r.Use(middleware.Logger)
 	}
 
