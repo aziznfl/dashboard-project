@@ -10,6 +10,9 @@ import (
 	ah "github.com/durianpay/fullstack-boilerplate/internal/module/auth/handler"
 	ar "github.com/durianpay/fullstack-boilerplate/internal/module/auth/repository"
 	au "github.com/durianpay/fullstack-boilerplate/internal/module/auth/usecase"
+	ph "github.com/durianpay/fullstack-boilerplate/internal/module/payment/handler"
+	pr "github.com/durianpay/fullstack-boilerplate/internal/module/payment/repository"
+	pu "github.com/durianpay/fullstack-boilerplate/internal/module/payment/usecase"
 	srv "github.com/durianpay/fullstack-boilerplate/internal/service/http"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
@@ -35,16 +38,19 @@ func main() {
 	}
 
 	userRepo := ar.NewUserRepo(db)
-
 	authUC := au.NewAuthUsecase(userRepo, cfg.JwtSecret, JwtExpiredDuration)
-
 	authH := ah.NewAuthHandler(authUC)
 
+	paymentRepo := pr.NewPaymentRepo(db)
+	paymentUC := pu.NewPaymentUsecase(paymentRepo)
+	paymentH := ph.NewPaymentHandler(paymentUC)
+
 	apiHandler := &api.APIHandler{
-		Auth: authH,
+		Auth:    authH,
+		Payment: paymentH,
 	}
 
-	server := srv.NewServer(apiHandler, cfg.OpenapiYamlLocation, cfg.AppEnv)
+	server := srv.NewServer(apiHandler, cfg.OpenapiYamlLocation, cfg.AppEnv, cfg.JwtSecret)
 
 	addr := cfg.HttpAddress
 	log.Printf("starting server on %s", addr)
@@ -59,6 +65,13 @@ func initDB(db *sql.DB) error {
 		  email TEXT NOT NULL UNIQUE,
 		  password_hash TEXT NOT NULL,
 		  role TEXT NOT NULL
+		);`,
+		`CREATE TABLE IF NOT EXISTS payments (
+		  id INTEGER PRIMARY KEY AUTOINCREMENT,
+		  amount TEXT NOT NULL,
+		  merchant TEXT NOT NULL,
+		  status TEXT NOT NULL,
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);`,
 	}
 	for _, s := range stmts {
@@ -82,6 +95,25 @@ func initDB(db *sql.DB) error {
 		}
 		if _, err := db.Exec("INSERT INTO users(email, password_hash, role) VALUES (?, ?, ?)", "operation@test.com", string(hash), "operation"); err != nil {
 			return err
+		}
+	}
+
+	// seed payments if not exists
+	var payCnt int
+	row = db.QueryRow("SELECT COUNT(1) FROM payments")
+	if err := row.Scan(&payCnt); err != nil {
+		return err
+	}
+	if payCnt == 0 {
+		payments := [][]string{
+			{"100000", "Gojek", "completed"},
+			{"250000", "Tokopedia", "processing"},
+			{"50000", "Grab", "failed"},
+		}
+		for _, p := range payments {
+			if _, err := db.Exec("INSERT INTO payments(amount, merchant, status) VALUES (?, ?, ?)", p[0], p[1], p[2]); err != nil {
+				return err
+			}
 		}
 	}
 
