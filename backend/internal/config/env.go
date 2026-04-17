@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	AppEnv               = getEnv("APP_ENV", "production")
 	JwtSecret           = []byte(getEnv("JWT_SECRET", "dev-secret-replace-me"))
 	JwtExpired          = getEnv("JWT_EXPIRED", "24h")
 	HttpAddress         = getEnv("HTTP_ADDR", ":8080")

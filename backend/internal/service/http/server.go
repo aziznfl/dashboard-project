@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/durianpay/fullstack-boilerplate/internal/config"
+	"github.com/durianpay/fullstack-boilerplate/internal/middleware"
 	"github.com/durianpay/fullstack-boilerplate/internal/openapigen"
 	"github.com/go-chi/chi/v5"
 	oapinethttpmw "github.com/oapi-codegen/nethttp-middleware"
@@ -31,6 +33,10 @@ func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string) *S
 	}
 
 	r := chi.NewRouter()
+
+	if config.AppEnv == "development" {
+		r.Use(middleware.Logger)
+	}
 
 	r.Route("/", func(api chi.Router) {
 		api.Use(oapinethttpmw.OapiRequestValidatorWithOptions(
