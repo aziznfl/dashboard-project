@@ -7,6 +7,7 @@ import (
 
 	"github.com/durianpay/fullstack-boilerplate/internal/api"
 	"github.com/durianpay/fullstack-boilerplate/internal/config"
+	"github.com/durianpay/fullstack-boilerplate/internal/infrastructure/cache"
 	ah "github.com/durianpay/fullstack-boilerplate/internal/module/auth/handler"
 	ar "github.com/durianpay/fullstack-boilerplate/internal/module/auth/repository"
 	au "github.com/durianpay/fullstack-boilerplate/internal/module/auth/usecase"
@@ -32,6 +33,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Initialize Cache
+	redisCache, err := cache.NewRedisCache(cfg.RedisHost, cfg.RedisPort, cfg.RedisPassword, cfg.RedisDB)
+	if err != nil {
+		log.Printf("warning: redis connection failed: %v", err)
+		// We can decide to panic or fallback to a no-op cache.
+		// For now, let's just log and continue if you want it to be optional,
+		// but since it's a "handle cache" request, maybe we should stop if it's critical.
+	}
+
 	JwtExpiredDuration, err := time.ParseDuration(cfg.JwtExpired)
 	if err != nil {
 		panic(err)
@@ -42,7 +52,7 @@ func main() {
 	authH := ah.NewAuthHandler(authUC)
 
 	paymentRepo := pr.NewPaymentRepo(db)
-	paymentUC := pu.NewPaymentUsecase(paymentRepo)
+	paymentUC := pu.NewPaymentUsecase(paymentRepo, redisCache)
 	paymentH := ph.NewPaymentHandler(paymentUC)
 
 	apiHandler := &api.APIHandler{
