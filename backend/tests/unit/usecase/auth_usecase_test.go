@@ -1,4 +1,4 @@
-package tests
+package usecase_test
 
 import (
 	"testing"
@@ -6,26 +6,13 @@ import (
 
 	"github.com/durianpay/fullstack-boilerplate/internal/entity"
 	"github.com/durianpay/fullstack-boilerplate/internal/module/auth/usecase"
+	"github.com/durianpay/fullstack-boilerplate/tests/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Manual mock for UserRepository
-type mockUserRepo struct {
-	mock.Mock
-}
-
-func (m *mockUserRepo) GetUserByEmail(email string) (*entity.User, error) {
-	args := m.Called(email)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.User), args.Error(1)
-}
-
 func TestAuthLogin(t *testing.T) {
-	repo := new(mockUserRepo)
+	repo := new(mocks.MockUserRepo)
 	secret := []byte("secret")
 	ttl := time.Hour
 	authUC := usecase.NewAuthUsecase(repo, secret, ttl)

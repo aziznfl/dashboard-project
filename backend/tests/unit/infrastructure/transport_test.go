@@ -1,4 +1,4 @@
-package tests
+package infrastructure_test
 
 import (
 	"encoding/json"

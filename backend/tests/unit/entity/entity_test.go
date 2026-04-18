@@ -1,4 +1,4 @@
-package tests
+package entity_test
 
 import (
 	"fmt"
