@@ -11,7 +11,15 @@ import (
 )
 
 type PaymentUsecase interface {
-	ListPayments(ctx context.Context, filter repository.PaymentFilter) ([]*entity.Payment, error)
+	ListPayments(ctx context.Context, filter repository.PaymentFilter) ([]*entity.Payment, *PaginationMeta, error)
+}
+
+type PaginationMeta struct {
+	Total      int64
+	Limit      int
+	Page       int
+	TotalPages int
+	LastID     *string
 }
 
 type Payment struct {
@@ -26,7 +34,7 @@ func NewPaymentUsecase(repo repository.PaymentRepository, cache cache.CacheRepos
 	}
 }
 
-func (u *Payment) ListPayments(ctx context.Context, filter repository.PaymentFilter) ([]*entity.Payment, error) {
+func (u *Payment) ListPayments(ctx context.Context, filter repository.PaymentFilter) ([]*entity.Payment, *PaginationMeta, error) {
 	// Build cache key based on filter
 	id := "all"
 	if filter.ID != nil && *filter.ID != "" {
@@ -48,21 +56,59 @@ func (u *Payment) ListPayments(ctx context.Context, filter repository.PaymentFil
 	if filter.Sort != nil && *filter.Sort != "" {
 		sort = *filter.Sort
 	}
-	cacheKey := fmt.Sprintf("payments:list:%s:%s:%s:%s:%s", id, status, merchant, amount, sort)
+	lastID := "none"
+	if filter.LastID != nil && *filter.LastID != "" {
+		lastID = *filter.LastID
+	}
+	cacheKey := fmt.Sprintf("payments:list:%s:%s:%s:%s:%s:%s:%d:%d", id, status, merchant, amount, sort, lastID, filter.Page, filter.Limit)
 
-	var payments []*entity.Payment
-	err := u.cache.Get(ctx, cacheKey, &payments)
-	if err == nil {
-		return payments, nil
+	type cacheResult struct {
+		Payments []*entity.Payment
+		Total    int64
 	}
 
-	payments, err = u.repo.List(ctx, filter)
+	var cached cacheResult
+	err := u.cache.Get(ctx, cacheKey, &cached)
+	if err == nil {
+		return cached.Payments, u.buildMeta(cached.Total, filter.Limit, filter.Page, cached.Payments), nil
+	}
+
+	total, err := u.repo.Count(ctx, filter)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	payments, err := u.repo.List(ctx, filter)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Cache for 5 minutes
-	_ = u.cache.Set(ctx, cacheKey, payments, 5*time.Minute)
+	_ = u.cache.Set(ctx, cacheKey, cacheResult{Payments: payments, Total: total}, 5*time.Minute)
+	
+	return payments, u.buildMeta(total, filter.Limit, filter.Page, payments), nil
+}
 
-	return payments, nil
+func (u *Payment) buildMeta(total int64, limit int, page int, payments []*entity.Payment) *PaginationMeta {
+	var lastID *string
+	if len(payments) > 0 {
+		lastID = &payments[len(payments)-1].ID
+	}
+
+	totalPages := 0
+	if limit > 0 {
+		totalPages = int((total + int64(limit) - 1) / int64(limit))
+	}
+
+	if page <= 0 {
+		page = 1
+	}
+
+	return &PaginationMeta{
+		Total:      total,
+		Limit:      limit,
+		Page:       page,
+		TotalPages: totalPages,
+		LastID:     lastID,
+	}
 }

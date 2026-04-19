@@ -4,12 +4,13 @@ import (
 	"context"
 	"strings"
 
+	"net/http"
+
 	"github.com/durianpay/fullstack-boilerplate/internal/entity"
 	"github.com/durianpay/fullstack-boilerplate/internal/transport"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers/legacy"
 	"github.com/golang-jwt/jwt/v5"
-	"net/http"
 )
 
 type contextKey string

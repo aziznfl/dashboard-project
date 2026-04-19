@@ -20,15 +20,25 @@ func NewPaymentHandler(paymentUC paymentUsecase.PaymentUsecase) *PaymentHandler 
 }
 
 func (h *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.Request, params openapigen.GetDashboardV1PaymentsParams) {
-	filter := repository.PaymentFilter{
-		ID:        params.Id,
-		Status:    params.Status,
-		Merchant:  params.Merchant,
-		Amount:   intPtrToInt64Ptr(params.Amount),
-		Sort:     params.Sort,
+	limit := 10
+	
+	page := 1
+	if params.Page != nil {
+		page = *params.Page
 	}
 
-	payments, err := h.paymentUC.ListPayments(r.Context(), filter)
+	filter := repository.PaymentFilter{
+		ID:       params.Id,
+		Status:   params.Status,
+		Merchant: params.Merchant,
+		Amount:   intPtrToInt64Ptr(params.Amount),
+		Sort:     params.Sort,
+		LastID:   params.LastId,
+		Page:     page,
+		Limit:    limit,
+	}
+
+	payments, meta, err := h.paymentUC.ListPayments(r.Context(), filter)
 	if err != nil {
 		transport.WriteError(w, err)
 		return
@@ -46,7 +56,17 @@ func (h *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	transport.WriteJSON(w, http.StatusOK, openapigen.PaymentListResponse{Payments: &respPayments})
+	total := int(meta.Total)
+	transport.WriteJSON(w, http.StatusOK, openapigen.PaymentListResponse{
+		Data: &respPayments,
+		Meta: &openapigen.PaginationMeta{
+			Total:      total,
+			Limit:      meta.Limit,
+			Page:       meta.Page,
+			TotalPages: meta.TotalPages,
+			LastId:     meta.LastID,
+		},
+	})
 }
 
 func intPtrToInt64Ptr(v *int) *int64 {

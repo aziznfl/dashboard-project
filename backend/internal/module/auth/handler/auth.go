@@ -32,7 +32,14 @@ func (a *AuthHandler) PostDashboardV1AuthLogin(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	transport.WriteJSON(w, http.StatusOK, openapigen.LoginResponse{Email: &user.Email, Role: &user.Role, Token: &token})
+	transport.WriteJSON(w, http.StatusOK, openapigen.LoginResponse{
+		Data: &openapigen.User{
+			Email: &user.Email,
+			Role:  &user.Role,
+			Token: &token,
+		},
+		Meta: &map[string]interface{}{},
+	})
 }
 
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst any) bool {
