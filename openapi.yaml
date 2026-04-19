@@ -38,6 +38,31 @@ components:
         - code
         - message
     
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 10
+        page:
+          type: integer
+          example: 1
+        total_pages:
+          type: integer
+          example: 10
+        last_id:
+          type: string
+          nullable: true
+          example: "123"
+      required:
+        - total
+        - limit
+        - page
+        - total_pages
+    
     User:
       type: object
       properties:
@@ -73,7 +98,13 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/User'
+            type: object
+            properties:
+              data:
+                $ref: '#/components/schemas/User'
+              meta:
+                type: object
+                nullable: true
     PaymentListResponse:
       description: Payment List
       content:
@@ -81,10 +112,12 @@ components:
           schema:
             type: object
             properties:
-              payments:
+              data:
                 type: array
                 items:
                   $ref: '#/components/schemas/Payment'
+              meta:
+                $ref: '#/components/schemas/PaginationMeta'
     UnauthorizedError:
       description: Authentication failed or missing credentials
       content:
@@ -145,6 +178,17 @@ paths:
           schema:
             type: integer
           description: exact payment amount
+        - in: query
+          name: last_id
+          schema:
+            type: string
+          description: last id of the previous page for cursor pagination
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: page number
       security:
         - bearerAuth: []
       responses:
