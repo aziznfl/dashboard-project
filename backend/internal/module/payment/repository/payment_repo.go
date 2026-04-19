@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/durianpay/fullstack-boilerplate/internal/entity"
@@ -33,61 +35,10 @@ func NewPaymentRepo(db *sql.DB) *Payment {
 }
 
 func (r *Payment) List(ctx context.Context, filter PaymentFilter) ([]*entity.Payment, error) {
-	query := `SELECT id, amount, merchant, status, created_at FROM payments WHERE 1=1`
-	var args []interface{}
-
-	if filter.ID != nil && *filter.ID != "" {
-		query += ` AND id = ?`
-		args = append(args, *filter.ID)
-	}
-	if filter.Status != nil && *filter.Status != "" {
-		query += ` AND status = ?`
-		args = append(args, *filter.Status)
-	}
-	if filter.Merchant != nil && *filter.Merchant != "" {
-		query += ` AND merchant = ?`
-		args = append(args, *filter.Merchant)
-	}
-	if filter.Amount != nil {
-		query += ` AND amount = ?`
-		args = append(args, *filter.Amount)
-	}
-
-	if filter.LastID != nil && *filter.LastID != "" {
-		query += ` AND id > ?`
-		args = append(args, *filter.LastID)
-	}
-
-	if filter.Sort != nil && *filter.Sort != "" {
-		switch *filter.Sort {
-		case "amount":
-			query += ` ORDER BY amount ASC`
-		case "-amount":
-			query += ` ORDER BY amount DESC`
-		case "merchant":
-			query += ` ORDER BY merchant ASC`
-		case "-merchant":
-			query += ` ORDER BY merchant DESC`
-		case "created_at":
-			query += ` ORDER BY created_at ASC`
-		case "-created_at":
-			query += ` ORDER BY created_at DESC`
-		default:
-			query += ` ORDER BY created_at DESC`
-		}
-	} else {
-		query += ` ORDER BY created_at DESC`
-	}
-
-	if filter.Limit > 0 {
-		query += ` LIMIT ?`
-		args = append(args, filter.Limit)
-		if filter.Page > 1 {
-			offset := (filter.Page - 1) * filter.Limit
-			query += ` OFFSET ?`
-			args = append(args, offset)
-		}
-	}
+	where, args := r.buildWhere(filter)
+	query := "SELECT id, amount, merchant, status, created_at FROM payments WHERE 1=1" + where
+	query = r.applySort(query, filter.Sort)
+	query, args = r.applyLimit(query, args, filter)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -108,32 +59,79 @@ func (r *Payment) List(ctx context.Context, filter PaymentFilter) ([]*entity.Pay
 
 	return payments, nil
 }
-func (r *Payment) Count(ctx context.Context, filter PaymentFilter) (int64, error) {
-	query := `SELECT COUNT(*) FROM payments WHERE 1=1`
-	var args []interface{}
 
-	if filter.ID != nil && *filter.ID != "" {
-		query += ` AND id = ?`
-		args = append(args, *filter.ID)
-	}
-	if filter.Status != nil && *filter.Status != "" {
-		query += ` AND status = ?`
-		args = append(args, *filter.Status)
-	}
-	if filter.Merchant != nil && *filter.Merchant != "" {
-		query += ` AND merchant = ?`
-		args = append(args, *filter.Merchant)
-	}
-	if filter.Amount != nil {
-		query += ` AND amount = ?`
-		args = append(args, *filter.Amount)
-	}
+func (r *Payment) Count(ctx context.Context, filter PaymentFilter) (int64, error) {
+	where, args := r.buildWhere(filter)
+	query := "SELECT COUNT(*) FROM payments WHERE 1=1" + where
 
 	var count int64
-	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
-	if err != nil {
+	if err := r.db.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, entity.WrapError(err, entity.ErrorCodeInternal, "db error")
 	}
 
 	return count, nil
+}
+
+func (r *Payment) buildWhere(f PaymentFilter) (string, []interface{}) {
+	var where strings.Builder
+	var args []interface{}
+
+	if f.ID != nil && *f.ID != "" {
+		where.WriteString(" AND id = ?")
+		args = append(args, *f.ID)
+	}
+	if f.Status != nil && *f.Status != "" {
+		where.WriteString(" AND status = ?")
+		args = append(args, *f.Status)
+	}
+	if f.Merchant != nil && *f.Merchant != "" {
+		where.WriteString(" AND merchant = ?")
+		args = append(args, *f.Merchant)
+	}
+	if f.Amount != nil {
+		where.WriteString(" AND amount = ?")
+		args = append(args, *f.Amount)
+	}
+	if f.LastID != nil && *f.LastID != "" {
+		where.WriteString(" AND id > ?")
+		args = append(args, *f.LastID)
+	}
+
+	return where.String(), args
+}
+
+func (r *Payment) applySort(query string, sort *string) string {
+	field, order := "created_at", "DESC"
+
+	if sort != nil && *sort != "" {
+		s := *sort
+		if strings.HasPrefix(s, "-") {
+			field, order = s[1:], "DESC"
+		} else {
+			field, order = s, "ASC"
+		}
+
+		allowed := map[string]bool{"id": true, "amount": true, "merchant": true, "status": true, "created_at": true}
+		if !allowed[field] {
+			field, order = "created_at", "DESC"
+		}
+	}
+
+	return fmt.Sprintf("%s ORDER BY %s %s", query, field, order)
+}
+
+func (r *Payment) applyLimit(query string, args []interface{}, f PaymentFilter) (string, []interface{}) {
+	if f.Limit <= 0 {
+		return query, args
+	}
+
+	query += " LIMIT ?"
+	args = append(args, f.Limit)
+
+	if f.Page > 1 {
+		query += " OFFSET ?"
+		args = append(args, (f.Page-1)*f.Limit)
+	}
+
+	return query, args
 }

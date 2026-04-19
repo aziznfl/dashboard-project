@@ -21,7 +21,7 @@ func NewPaymentHandler(paymentUC paymentUsecase.PaymentUsecase) *PaymentHandler 
 
 func (h *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.Request, params openapigen.GetDashboardV1PaymentsParams) {
 	limit := 10
-	
+
 	page := 1
 	if params.Page != nil {
 		page = *params.Page
