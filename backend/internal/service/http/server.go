@@ -34,6 +34,8 @@ func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string, ap
 
 	r := chi.NewRouter()
 
+	r.Use(middleware.CORS)
+
 	if appEnv == "development" {
 		r.Use(middleware.Logger)
 	}
