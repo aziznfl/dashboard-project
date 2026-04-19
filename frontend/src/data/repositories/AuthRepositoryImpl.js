@@ -5,6 +5,6 @@ import { AuthDTO } from '../dto/AuthDTO';
 export class AuthRepositoryImpl extends AuthRepository {
   async login({ email, password }) {
     const response = await api.post('/dashboard/v1/auth/login', { email, password });
-    return AuthDTO.toEntity(response.data);
+    return AuthDTO.toEntity(response.data.data);
   }
 }

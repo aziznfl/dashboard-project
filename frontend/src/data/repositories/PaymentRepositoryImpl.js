@@ -3,14 +3,24 @@ import { PaymentRepository } from '@/domain/repositories/PaymentRepository';
 import { PaymentDTO } from '../dto/PaymentDTO';
 
 export class PaymentRepositoryImpl extends PaymentRepository {
-  async getPayments({ sort, status, id } = {}) {
+  async getPayments(filters = {}) {
     const params = {};
-    if (sort) params.sort = sort;
-    if (status) params.status = status;
-    if (id) params.id = id;
+    Object.keys(filters).forEach(key => {
+      const val = filters[key];
+      if (val !== undefined && val !== null && val !== '') {
+        params[key] = val;
+      }
+    });
+
+    // Ensure page and limit have defaults if not set
+    if (!params.page) params.page = 1;
+    if (!params.limit) params.limit = 10;
 
     const response = await api.get('/dashboard/v1/payments', { params });
-    // The response schema from openapi.yaml: { payments: [Payment] }
-    return PaymentDTO.toEntities(response.data.payments);
+    // The response schema from openapi.yaml: { data: [Payment], meta: PaginationMeta }
+    return {
+      data: PaymentDTO.toEntities(response.data.data),
+      meta: response.data.meta
+    };
   }
 }

@@ -107,5 +107,8 @@ const handleSort = (column) => {
         </tbody>
       </table>
     </div>
+
+    <!-- Footer Slot (e.g., Pagination) -->
+    <slot name="footer"></slot>
   </div>
 </template>

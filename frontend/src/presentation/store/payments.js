@@ -9,7 +9,16 @@ export const usePaymentStore = defineStore('payments', {
     filters: {
       sort: '-created_at',
       status: '',
-      id: ''
+      id: '',
+      page: 1,
+      limit: 10
+    },
+    meta: {
+      total: 0,
+      limit: 10,
+      page: 1,
+      totalPages: 0,
+      last_id: null
     }
   }),
   
@@ -18,8 +27,16 @@ export const usePaymentStore = defineStore('payments', {
       this.loading = true;
       this.error = null;
       try {
-        const payments = await PaymentService.fetchPayments(this.filters);
-        this.payments = payments;
+        const { data, meta } = await PaymentService.fetchPayments(this.filters);
+        this.payments = data;
+        // Map camelCase for frontend if needed, but the API might return snake_case in meta
+        this.meta = {
+          total: meta.total,
+          limit: meta.limit,
+          page: meta.page,
+          totalPages: meta.total_pages,
+          lastId: meta.last_id
+        };
       } catch (err) {
         this.error = err;
       } finally {
@@ -27,8 +44,14 @@ export const usePaymentStore = defineStore('payments', {
       }
     },
     
+    setPage(page) {
+      this.filters.page = page;
+      return this.fetchPayments();
+    },
+
     setFilters(newFilters) {
-      this.filters = { ...this.filters, ...newFilters };
+      // If setting filters, reset page to 1
+      this.filters = { ...this.filters, ...newFilters, page: 1 };
       return this.fetchPayments();
     }
   }

@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from 'lucide-vue-next';
 import BaseTable from '@/presentation/components/common/BaseTable.vue';
+import BasePagination from '@/presentation/components/common/BasePagination.vue';
 import BaseButton from '@/presentation/components/common/BaseButton.vue';
 import BaseInput from '@/presentation/components/common/BaseInput.vue';
 import BaseCard from '@/presentation/components/common/BaseCard.vue';
@@ -59,6 +60,10 @@ const applyFilters = () => {
 
 const logout = () => {
   authStore.logout();
+};
+
+const handlePageChange = (page) => {
+  paymentStore.setPage(page);
 };
 
 // Summary metrics (mock/derived)
@@ -251,6 +256,17 @@ const getStatusIcon = (status) => {
 
           <template #cell(createdAt)="{ item }">
             <span class="text-surface-400">{{ item.formattedDate }}</span>
+          </template>
+
+          <template #footer>
+            <BasePagination
+              v-if="paymentStore.meta.totalPages > 1"
+              :current-page="paymentStore.meta.page"
+              :total-pages="paymentStore.meta.totalPages"
+              :total-items="paymentStore.meta.total"
+              :page-size="paymentStore.meta.limit"
+              @page-change="handlePageChange"
+            />
           </template>
         </BaseTable>
       </div>
