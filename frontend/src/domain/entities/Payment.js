@@ -8,11 +8,7 @@ export class Payment {
   }
 
   get formattedAmount() {
-    // Assuming amount is string from API like "100.00"
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(parseFloat(this.amount));
+    return this.amount.toCurrency();
   }
 
   get statusColor() {

@@ -67,7 +67,7 @@ const totalAmount = computed(() => {
 });
 
 const formattedTotalVolume = computed(() => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalAmount.value);
+  return totalAmount.value.toCurrency();
 });
 
 const currentDate = computed(() => {
