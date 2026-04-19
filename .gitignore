@@ -1,3 +1,27 @@
 # macOS
 .DS_Store
+
+# Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env
+.env.*.local
+.eslintcache
+.stylelintcache
+.prettiercache
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Backend
+backend/bin/
+backend/out/
+*.exe
+*.test
+*.prof
 data/dashboard.db

@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-950 text-surface-50 antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-surface-900/50 backdrop-blur-md border border-surface-800 rounded-xl overflow-hidden;
+  }
+  
+  .glass-input {
+    @apply bg-surface-900 border border-surface-700 rounded-lg px-4 py-2 outline-none transition-all duration-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50;
+  }
+}
