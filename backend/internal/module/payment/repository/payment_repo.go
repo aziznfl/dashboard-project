@@ -13,9 +13,11 @@ type PaymentRepository interface {
 }
 
 type PaymentFilter struct {
-	ID     *string
-	Status *string
-	Sort   *string
+	ID        *string
+	Status    *string
+	Merchant  *string
+	Amount    *int64
+	Sort      *string
 }
 
 type Payment struct {
@@ -38,6 +40,14 @@ func (r *Payment) List(ctx context.Context, filter PaymentFilter) ([]*entity.Pay
 		query += ` AND status = ?`
 		args = append(args, *filter.Status)
 	}
+	if filter.Merchant != nil && *filter.Merchant != "" {
+		query += ` AND merchant = ?`
+		args = append(args, *filter.Merchant)
+	}
+	if filter.Amount != nil {
+		query += ` AND amount = ?`
+		args = append(args, *filter.Amount)
+	}
 
 	if filter.Sort != nil && *filter.Sort != "" {
 		switch *filter.Sort {
@@ -45,6 +55,10 @@ func (r *Payment) List(ctx context.Context, filter PaymentFilter) ([]*entity.Pay
 			query += ` ORDER BY amount ASC`
 		case "-amount":
 			query += ` ORDER BY amount DESC`
+		case "merchant":
+			query += ` ORDER BY merchant ASC`
+		case "-merchant":
+			query += ` ORDER BY merchant DESC`
 		case "created_at":
 			query += ` ORDER BY created_at ASC`
 		case "-created_at":

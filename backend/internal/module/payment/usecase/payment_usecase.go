@@ -29,14 +29,26 @@ func NewPaymentUsecase(repo repository.PaymentRepository, cache cache.CacheRepos
 func (u *Payment) ListPayments(ctx context.Context, filter repository.PaymentFilter) ([]*entity.Payment, error) {
 	// Build cache key based on filter
 	id := "all"
-	if filter.ID != nil {
+	if filter.ID != nil && *filter.ID != "" {
 		id = *filter.ID
 	}
 	status := "all"
-	if filter.Status != nil {
+	if filter.Status != nil && *filter.Status != "" {
 		status = *filter.Status
 	}
-	cacheKey := fmt.Sprintf("payments:list:%s:%s", id, status)
+	merchant := "all"
+	if filter.Merchant != nil && *filter.Merchant != "" {
+		merchant = *filter.Merchant
+	}
+	amount := "all"
+	if filter.Amount != nil {
+		amount = fmt.Sprintf("%d", *filter.Amount)
+	}
+	sort := "default"
+	if filter.Sort != nil && *filter.Sort != "" {
+		sort = *filter.Sort
+	}
+	cacheKey := fmt.Sprintf("payments:list:%s:%s:%s:%s:%s", id, status, merchant, amount, sort)
 
 	var payments []*entity.Payment
 	err := u.cache.Get(ctx, cacheKey, &payments)

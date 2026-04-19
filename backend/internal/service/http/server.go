@@ -4,9 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/durianpay/fullstack-boilerplate/internal/middleware"
@@ -17,7 +14,8 @@ import (
 )
 
 type Server struct {
-	router http.Handler
+	router  http.Handler
+	service *http.Server
 }
 
 const (
@@ -60,38 +58,23 @@ func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string, ap
 	}
 }
 
-func (s *Server) Start(addr string) {
-	service := &http.Server{
+func (s *Server) Start(addr string) error {
+	s.service = &http.Server{
 		Addr:         addr,
 		Handler:      s.router,
 		ReadTimeout:  readTimeout * time.Second,
 		WriteTimeout: writeTimeout * time.Second,
 		IdleTimeout:  idleTimeout * time.Second,
 	}
-	go func() {
-		log.Printf("listening on %s", addr)
-		err := service.ListenAndServe()
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	}()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	return s.service.ListenAndServe()
+}
 
-	<-stop
-	log.Println("Shutting down gracefully...")
-
-	// Timeout for shutdown
-	const shutdownTimeout = 10 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-	defer cancel()
-
-	if err := service.Shutdown(ctx); err != nil {
-		log.Fatalf("Forced shutdown: %v", err)
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.service == nil {
+		return nil
 	}
-
-	log.Println("Server stopped cleanly ✔")
+	return s.service.Shutdown(ctx)
 }
 
 func (s *Server) Routes() http.Handler {

@@ -9,7 +9,7 @@ GEN_PKG=internal/openapigen
 
 help:
 	@echo "Available targets:"
-	@echo "  make dep        	- install depedencies
+	@echo "  make dep        	- install depedencies"
 	@echo "  make openapi-gen	- generate openapigen result"
 	@echo "  make gen-secret	- generate JWT_SECRET"
 	@echo "  make run        	- Run the app locally (with .env)"
@@ -20,10 +20,10 @@ dep:
 	@go mod vendor
 
 run:
-	CGO_ENABLED=1 $(go_bin) run main.go
+	CGO_ENABLED=1 $(go_bin) run cmd/server/main.go
 
 build:
-	CGO_ENABLED=1 $(go_bin) build -o bin/mygolangapp main.go
+	CGO_ENABLED=1 $(go_bin) build -o bin/mygolangapp cmd/server/main.go
 
 tool-openapi:
 	$(go_bin) install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
