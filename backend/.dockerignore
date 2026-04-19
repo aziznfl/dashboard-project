@@ -1,0 +1,20 @@
+# Git
+.git
+.gitignore
+
+# Go
+vendor/
+*.test
+*.out
+
+# IDEs
+.idea/
+.vscode/
+.DS_Store
+
+# Executables
+server-bin
+backend-bin
+
+# Env files
+# .env (usually we don't want to ignore it if we're bundling it for a simple setup)
