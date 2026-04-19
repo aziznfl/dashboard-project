@@ -11,6 +11,7 @@ import {
 
 // Components
 import Navbar from '@/presentation/components/layout/Navbar.vue';
+import PaymentStats from '@/presentation/components/dashboard/PaymentStats.vue';
 import PaymentFilters from '@/presentation/components/dashboard/PaymentFilters.vue';
 import BaseTable from '@/presentation/components/common/BaseTable.vue';
 import BasePagination from '@/presentation/components/common/BasePagination.vue';
@@ -61,15 +62,6 @@ const handlePageChange = (page) => {
   paymentStore.setPage(page);
 };
 
-// Summary metrics
-const totalAmount = computed(() => {
-  return paymentStore.payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-});
-
-const formattedTotalVolume = computed(() => {
-  return totalAmount.value.toCurrency();
-});
-
 const currentDate = computed(() => {
   return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 });
@@ -103,6 +95,13 @@ const getStatusIcon = (status) => {
           </BaseButton>
         </div>
       </div>
+
+      <!-- Stats Widget Section -->
+      <PaymentStats 
+        :payments="paymentStore.payments" 
+        :meta="paymentStore.meta" 
+        :loading="paymentStore.loading" 
+      />
 
       <!-- Filters & Table Section -->
       <div class="space-y-6">
