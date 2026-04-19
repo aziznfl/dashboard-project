@@ -26,7 +26,7 @@ build:
 	CGO_ENABLED=1 $(go_bin) build -o bin/mygolangapp main.go
 
 tool-openapi:
-	@go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+	$(go_bin) install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 
 openapi-gen: tool-openapi
 	@echo "generating openapi types/server (oapi-codegen v2)"
@@ -34,4 +34,4 @@ openapi-gen: tool-openapi
 
 gen-secret:
 	@echo "🔐 Generating JWT secret..."
-	@go run ./script/gen-secret/main.go
+	@$(go_bin) run ./script/gen-secret/main.go
