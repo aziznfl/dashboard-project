@@ -34,6 +34,11 @@ func NewPaymentUsecase(repo repository.PaymentRepository, cache cache.CacheRepos
 	}
 }
 
+type CacheResult struct {
+	Payments []*entity.Payment
+	Total    int64
+}
+
 func (u *Payment) ListPayments(ctx context.Context, filter repository.PaymentFilter) ([]*entity.Payment, *PaginationMeta, error) {
 	// Build cache key based on filter
 	id := "all"
@@ -62,12 +67,7 @@ func (u *Payment) ListPayments(ctx context.Context, filter repository.PaymentFil
 	}
 	cacheKey := fmt.Sprintf("payments:list:%s:%s:%s:%s:%s:%s:%d:%d", id, status, merchant, amount, sort, lastID, filter.Page, filter.Limit)
 
-	type cacheResult struct {
-		Payments []*entity.Payment
-		Total    int64
-	}
-
-	var cached cacheResult
+	var cached CacheResult
 	err := u.cache.Get(ctx, cacheKey, &cached)
 	if err == nil {
 		return cached.Payments, u.buildMeta(cached.Total, filter.Limit, filter.Page, cached.Payments), nil
@@ -84,7 +84,7 @@ func (u *Payment) ListPayments(ctx context.Context, filter repository.PaymentFil
 	}
 
 	// Cache for 5 minutes
-	_ = u.cache.Set(ctx, cacheKey, cacheResult{Payments: payments, Total: total}, 5*time.Minute)
+	_ = u.cache.Set(ctx, cacheKey, CacheResult{Payments: payments, Total: total}, 5*time.Minute)
 	
 	return payments, u.buildMeta(total, filter.Limit, filter.Page, payments), nil
 }

@@ -20,3 +20,8 @@ func (m *MockPaymentRepo) List(ctx context.Context, filter repository.PaymentFil
 	}
 	return args.Get(0).([]*entity.Payment), args.Error(1)
 }
+
+func (m *MockPaymentRepo) Count(ctx context.Context, filter repository.PaymentFilter) (int64, error) {
+	args := m.Called(ctx, filter)
+	return args.Get(0).(int64), args.Error(1)
+}

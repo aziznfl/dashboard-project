@@ -20,24 +20,26 @@ func TestPaymentList_Caching(t *testing.T) {
 
 	ctx := context.Background()
 	filter := repository.PaymentFilter{}
-	cacheKey := "payments:list:all:all"
+	cacheKey := "payments:list:all:all:all:all:default:none:0:0"
 
 	payments := []*entity.Payment{
-		{ID: "1", Amount: "100", Merchant: "A", Status: "success"},
-		{ID: "2", Amount: "200", Merchant: "B", Status: "pending"},
+		{ID: "1", Amount: 100, Merchant: "A", Status: "success"},
+		{ID: "2", Amount: 200, Merchant: "B", Status: "pending"},
 	}
 
 	t.Run("CacheHit", func(t *testing.T) {
 		// Expect Get from cache and return data
 		cache.On("Get", ctx, cacheKey, mock.Anything).Run(func(args mock.Arguments) {
-			dest := args.Get(2).(*[]*entity.Payment)
-			*dest = payments
+			dest := args.Get(2).(*usecase.CacheResult)
+			dest.Payments = payments
+			dest.Total = 2
 		}).Return(nil).Once()
 
-		res, err := uc.ListPayments(ctx, filter)
+		res, meta, err := uc.ListPayments(ctx, filter)
 
 		assert.NoError(t, err)
 		assert.Equal(t, payments, res)
+		assert.Equal(t, int64(2), meta.Total)
 		repo.AssertNotCalled(t, "List", mock.Anything, mock.Anything)
 		cache.AssertExpectations(t)
 	})
@@ -49,13 +51,15 @@ func TestPaymentList_Caching(t *testing.T) {
 
 		// Expect Get (miss), then Repo call, then Set cache
 		cache.On("Get", ctx, cacheKey, mock.Anything).Return(assert.AnError).Once()
+		repo.On("Count", ctx, filter).Return(int64(2), nil).Once()
 		repo.On("List", ctx, filter).Return(payments, nil).Once()
-		cache.On("Set", ctx, cacheKey, payments, 5*time.Minute).Return(nil).Once()
+		cache.On("Set", ctx, cacheKey, usecase.CacheResult{Payments: payments, Total: 2}, 5*time.Minute).Return(nil).Once()
 
-		res, err := uc.ListPayments(ctx, filter)
+		res, meta, err := uc.ListPayments(ctx, filter)
 
 		assert.NoError(t, err)
 		assert.Equal(t, payments, res)
+		assert.Equal(t, int64(2), meta.Total)
 		repo.AssertExpectations(t)
 		cache.AssertExpectations(t)
 	})
