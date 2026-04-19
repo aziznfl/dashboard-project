@@ -1,0 +1,9 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:80"
+    # To connect to the backend container, both should share an external network
+    # or use host.docker.internal (on Mac/Windows)
+    extra_hosts:
+      - "backend:host-gateway"
